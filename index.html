@@ -97,6 +97,12 @@
                 settingsTitle: "Settings",
                 language: "Language",
                 errorEnterWord: "Please enter a word to play.",
+                language: "Language",
+                errorEnterWord: "Please enter a word to play.",
+                // ADD THESE
+                difficultyEasy: "Easy",
+                difficultyMedium: "Medium",
+                difficultyHard: "Hard",
                 wordList: wordLists.en
             },
             nl: {
@@ -117,6 +123,12 @@
                 settingsTitle: "Instellingen",
                 language: "Taal",
                 errorEnterWord: "Voer alstublieft een woord in om te spelen.",
+                language: "Taal",
+                errorEnterWord: "Voer alstublieft een woord in om te spelen.",
+                // ADD THESE
+                difficultyEasy: "Makkelijk",
+                difficultyMedium: "Gemiddeld",
+                difficultyHard: "Moeilijk",
                 wordList: wordLists.nl
             }
         };
@@ -132,6 +144,9 @@
             const [result, setResult] = useState(null);
             const [isUserWord, setIsUserWord] = useState(false);
             const [userWordInput, setUserWordInput] = useState('');
+            
+            const [difficulty, setDifficulty] = useState('medium');
+
             const [correctAnswer, setCorrectAnswer] = useState(0);
             const [isWordVisible, setIsWordVisible] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
@@ -170,7 +185,8 @@
                     }
                     wordToUse = userWordInput.trim().toUpperCase();
                 } else {
-                    wordToUse = t.wordList[Math.floor(Math.random() * t.wordList.length)];
+                    const currentWordList = t.wordList[difficulty] || t.wordList['medium']; // Default to medium if something is wrong
+                    wordToUse = currentWordList[Math.floor(Math.random() * currentWordList.length)];
                 }
                 
                 setCurrentWord(wordToUse);
@@ -210,6 +226,11 @@
                 timeoutRef.current = setTimeout(nextStep, 3000);
 
             }, [playerInput, correctAnswer, startRound, isUserWord]);
+                
+            const handleSettingChange = (setter, valueFn) => {
+                setter(valueFn);
+                resetGame();
+            };
 
             const handleKeyDown = (e) => {
                 if (e.key === 'Enter' && playerInput) {
@@ -304,6 +325,18 @@
                         React.createElement('button', { key: 'play', onClick: startRound, disabled: gameState !== 'idle' && gameState !== 'showing_result', className: "p-2 rounded-lg transition-colors bg-green-500 hover:bg-green-400 text-white disabled:bg-gray-300" }, React.createElement(PlayIcon))
                     ])
                 ]),
+                
+                React.createElement('div', { key: 'quick-controls', className: 'p-2 bg-white border-b border-gray-200 flex items-center justify-center gap-2' }, [
+                    React.createElement('button', {
+                        onClick: () => handleSettingChange(setIsUserWord, p => !p),
+                        className: `h-10 px-4 rounded-lg font-semibold transition-colors ${isUserWord ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-700'}`
+                    }, isUserWord ? t.yourWord : t.randomWord),
+                    React.createElement('button', {
+                        onClick: () => handleSettingChange(setDifficulty, d => d === 'easy' ? 'medium' : d === 'medium' ? 'hard' : 'easy'),
+                        className: `h-10 px-4 rounded-lg font-semibold transition-colors bg-gray-100 text-gray-700`
+                    }, t[`difficulty${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`])
+                ]),
+                
                 React.createElement('div', { key: 'game-area', className: 'flex-1 flex justify-center items-center' }, renderGameArea()),
                 
                 showSettings && React.createElement('div', { className: "absolute inset-0 bg-black bg-opacity-40 z-40 flex items-center justify-center p-4", onClick: () => setShowSettings(false) }, 
