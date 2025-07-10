@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Word Sum Game</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        html, body, #root {
+            height: 100%;
+            width: 100%;
+            position: fixed;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script src="wordlists.js"></script>
+    
+    <script>
+        /*
+         * Word Sum Game
+         * Copyright (c) 2025 Your Name
+         * Features:
+         * - UI and design inspired by Number Sequence Memory Game.
+         * - Game modes: random word or user-provided word.
+         * - Brief word presentation before input.
+         * - Score and round tracking.
+         * - Responsive design for mobile and desktop.
+         * - Full internationalization support (Dutch/English) with massively expanded word lists.
+         */
+
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // --- Icon Components ---
+        const PlayIcon = () => React.createElement('svg', { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, React.createElement('polygon', { points: "5,3 19,12 5,21" }));
+        const RotateCcwIcon = () => React.createElement('svg', { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, [React.createElement('polyline', { key: 1, points: "1,4 1,10 7,10" }), React.createElement('path', { key: 2, d: "M3.51 15a9 9 0 1 0 2.13-9.36L1 10" })]);
+        const SettingsIcon = () => React.createElement('svg', { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, [React.createElement('path', { key: 1, d: "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" }), React.createElement('circle', { key: 2, cx: "12", cy: "12", r: "3" })]);
+        const XIcon = () => React.createElement('svg', { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, [React.createElement('path', { key: 1, d: "M18 6L6 18" }), React.createElement('path', { key: 2, d: "M6 6l12 12" })]);
+        const CheckIcon = ({ className }) => React.createElement('svg', { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "3", strokeLinecap: "round", strokeLinejoin: "round", className }, React.createElement('polyline', { points: "20 6 9 17 4 12" }));
+        const XCircleIcon = ({ className }) => React.createElement('svg', { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className }, [React.createElement('circle', { cx: 12, cy: 12, r: 10 }), React.createElement('line', { x1: 15, y1: 9, x2: 9, y2: 15 }), React.createElement('line', { x1: 9, y1: 9, x2: 15, y2: 15 })]);
+
+        // --- Cookie Utilities ---
+        const setCookie = (name, value, days = 365) => {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = `${name}=${encodeURIComponent(JSON.stringify(value))};expires=${expires.toUTCString()};path=/`;
+        };
+
+        const getCookie = (name) => {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) {
+                    try {
+                        return JSON.parse(decodeURIComponent(c.substring(nameEQ.length, c.length)));
+                    } catch (e) { return null; }
+                }
+            }
+            return null;
+        };
+        
+        // --- Internationalization & Word Lists ---
+        const translations = {
+            en: {
+                title: "Word Sum Game",
+                description: "Calculate the sum of the letters in a word (A=1, B=2, etc.).",
+                startGame: "Start Game",
+                score: "Score",
+                round: "Round",
+                checkAnswer: "Check Answer",
+                correct: "Correct!",
+                wrong: "Wrong!",
+                yourAnswer: "Your Answer",
+                correctAnswer: "Correct Answer",
+                randomWord: "Random Word",
+                yourWord: "Your Word",
+                enterAWord: "Enter a word",
+                whatIsTheSum: "What is the sum?",
+                settingsTitle: "Settings",
+                language: "Language",
+                errorEnterWord: "Please enter a word to play.",
+                wordList: wordLists.en
+            },
+            nl: {
+                title: "Woordsom Spel",
+                description: "Bereken de som van de letters in een woord (A=1, B=2, etc.).",
+                startGame: "Start Spel",
+                score: "Score",
+                round: "Ronde",
+                checkAnswer: "Controleer Antwoord",
+                correct: "Correct!",
+                wrong: "Fout!",
+                yourAnswer: "Jouw Antwoord",
+                correctAnswer: "Juiste Antwoord",
+                randomWord: "Willekeurig Woord",
+                yourWord: "Eigen Woord",
+                enterAWord: "Voer een woord in",
+                whatIsTheSum: "Wat is de som?",
+                settingsTitle: "Instellingen",
+                language: "Taal",
+                errorEnterWord: "Voer alstublieft een woord in om te spelen.",
+                wordList: wordLists.nl
+            }
+        };
+
+        // --- Main Game Component ---
+        const WordSumGame = () => {
+            const [language, setLanguage] = useState(() => getCookie('wordSumLang') || 'nl');
+            const [gameState, setGameState] = useState('idle');
+            const [score, setScore] = useState(0);
+            const [roundsPlayed, setRoundsPlayed] = useState(0);
+            const [currentWord, setCurrentWord] = useState('');
+            const [playerInput, setPlayerInput] = useState('');
+            const [result, setResult] = useState(null);
+            const [isUserWord, setIsUserWord] = useState(false);
+            const [userWordInput, setUserWordInput] = useState('');
+            const [correctAnswer, setCorrectAnswer] = useState(0);
+            const [isWordVisible, setIsWordVisible] = useState(false);
+            const [showSettings, setShowSettings] = useState(false);
+
+            const timeoutRef = useRef(null);
+            const inputRef = useRef(null);
+            
+            const t = translations[language];
+
+            useEffect(() => {
+                setCookie('wordSumLang', language);
+            }, [language]);
+
+            const calculateWordSum = (word) => {
+                return word.toUpperCase().split('').reduce((sum, letter) => {
+                    const charCode = letter.charCodeAt(0);
+                    if (charCode >= 65 && charCode <= 90) { // A-Z
+                        return sum + (charCode - 64);
+                    }
+                    return sum;
+                }, 0);
+            };
+
+            const startRound = useCallback(() => {
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                setResult(null);
+                setPlayerInput('');
+                setIsWordVisible(true);
+
+                let wordToUse = '';
+                if (isUserWord) {
+                    if (userWordInput.trim() === '') {
+                        alert(t.errorEnterWord);
+                        setGameState('idle');
+                        return;
+                    }
+                    wordToUse = userWordInput.trim().toUpperCase();
+                } else {
+                    wordToUse = t.wordList[Math.floor(Math.random() * t.wordList.length)];
+                }
+                
+                setCurrentWord(wordToUse);
+                setCorrectAnswer(calculateWordSum(wordToUse));
+                setGameState('presenting');
+                
+                timeoutRef.current = setTimeout(() => {
+                    setIsWordVisible(false);
+                    setGameState('waiting_for_input');
+                    setTimeout(() => inputRef.current?.focus(), 100);
+                }, 1500);
+
+            }, [isUserWord, userWordInput, t]);
+
+            const resetGame = useCallback(() => {
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                setScore(0);
+                setRoundsPlayed(0);
+                setPlayerInput('');
+                setResult(null);
+                setCurrentWord('');
+                setGameState('idle');
+                setUserWordInput('');
+            }, []);
+
+            const checkAnswer = useCallback(() => {
+                const isCorrect = parseInt(playerInput, 10) === correctAnswer;
+                setResult({ success: isCorrect, correct: correctAnswer, player: playerInput });
+                if (isCorrect) setScore(prev => prev + 1);
+                setRoundsPlayed(prev => prev + 1);
+                setGameState('showing_result');
+
+                const nextStep = isUserWord
+                    ? () => { setGameState('idle'); setUserWordInput(''); }
+                    : startRound;
+
+                timeoutRef.current = setTimeout(nextStep, 3000);
+
+            }, [playerInput, correctAnswer, startRound, isUserWord]);
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter' && playerInput) {
+                    checkAnswer();
+                }
+            };
+            
+            const handleUserWordKeyDown = (e) => {
+                if(e.key === 'Enter' && userWordInput) {
+                    startRound();
+                }
+            };
+
+            const renderGameArea = () => {
+                switch (gameState) {
+                    case 'presenting':
+                        return React.createElement('div', { className: 'flex flex-col items-center justify-center' },
+                            React.createElement('div', {
+                                key: 'word-display',
+                                className: 'flex items-center justify-center mb-4',
+                                style: { height: '10rem' }
+                            }, isWordVisible && React.createElement('span', { className: 'text-6xl font-bold text-blue-600 tracking-widest' }, currentWord))
+                        );
+                    case 'waiting_for_input':
+                        return React.createElement('div', { className: 'text-center' }, [
+                            React.createElement('div', { key: 'prompt', className: 'text-2xl text-gray-500 mb-4' }, t.whatIsTheSum),
+                            React.createElement('input', {
+                                ref: inputRef,
+                                type: "number",
+                                inputMode: "numeric",
+                                value: playerInput,
+                                onChange: e => setPlayerInput(e.target.value),
+                                onKeyDown: handleKeyDown,
+                                className: 'w-48 h-20 text-4xl font-semibold text-center text-gray-700 bg-white border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition'
+                            }),
+                            React.createElement('button', {
+                                key: 'submit', onClick: checkAnswer,
+                                className: "mt-6 px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 transition-colors text-lg shadow-md"
+                            }, t.checkAnswer)
+                        ]);
+                    case 'showing_result':
+                        return React.createElement('div', { className: 'flex flex-col items-center text-center' },
+                            result.success
+                                ? React.createElement(CheckIcon, { className: 'text-green-500 w-24 h-24 mb-4' })
+                                : React.createElement(XCircleIcon, { className: 'text-red-500 w-24 h-24 mb-4' }),
+                            React.createElement('h2', { className: `text-4xl font-bold ${result.success ? 'text-green-600' : 'text-red-600'}` },
+                                result.success ? t.correct : t.wrong
+                            ),
+                            !result.success && React.createElement('div', { className: 'mt-4 text-lg space-y-1' }, [
+                                React.createElement('p', { key: 'word' }, `${currentWord} = ${result.correct}`),
+                                React.createElement('p', { key: 'your' }, `${t.yourAnswer}: ${result.player || '...'}`),
+                            ])
+                        );
+                    case 'idle':
+                    default:
+                        return React.createElement('div', { className: "text-center" }, [
+                            React.createElement('h2', { key: 'title', className: "text-4xl font-bold mb-2 text-gray-800" }, t.title),
+                            React.createElement('p', { key: 'description', className: "text-gray-500 max-w-md mx-auto mb-8" }, t.description),
+                            React.createElement('div', { key: 'game-mode-selector', className: 'mb-6 flex justify-center gap-4' },[
+                                React.createElement('button', { onClick: () => setIsUserWord(false), className: `px-6 py-2 rounded-lg font-semibold ${!isUserWord ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}` }, t.randomWord),
+                                React.createElement('button', { onClick: () => setIsUserWord(true), className: `px-6 py-2 rounded-lg font-semibold ${isUserWord ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}` }, t.yourWord),
+                            ]),
+                            isUserWord && React.createElement('div', { className: 'mb-6' },
+                                React.createElement('input', {
+                                    type: 'text',
+                                    value: userWordInput,
+                                    onChange: e => setUserWordInput(e.target.value.replace(/[^a-zA-Z]/g, '')),
+                                    onKeyDown: handleUserWordKeyDown,
+                                    placeholder: t.enterAWord,
+                                    className: 'w-64 h-12 text-xl text-center text-gray-700 bg-white border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition'
+                                })
+                            ),
+                            React.createElement('button', { key: 'start', onClick: startRound, className: "px-8 py-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-500 transition-colors text-xl shadow-lg" }, t.startGame),
+                        ]);
+                }
+            };
+
+            return React.createElement('div', { className: "min-h-screen bg-gray-50 text-gray-800 flex flex-col" }, [
+                React.createElement('div', { key: 'header', className: "p-4 bg-white flex justify-between items-center border-b border-gray-200" }, [
+                    React.createElement('div', { key: 'scores', className: "flex gap-6 items-center text-lg" }, [
+                        React.createElement('div', { key: 'score' }, [React.createElement('span', { className: "font-bold text-blue-600" }, `${t.score}: `), `${score}`]),
+                        React.createElement('div', { key: 'round' }, [React.createElement('span', { className: "font-bold text-gray-500" }, `${t.round}: `), `${roundsPlayed}`]),
+                    ]),
+                    React.createElement('div', { key: 'controls', className: "flex gap-2" }, [
+                        React.createElement('button', { key: 'settings', onClick: () => setShowSettings(true), className: "p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors" }, React.createElement(SettingsIcon)),
+                        React.createElement('button', { key: 'reset', onClick: resetGame, className: "p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors" }, React.createElement(RotateCcwIcon, {})),
+                        React.createElement('button', { key: 'play', onClick: startRound, disabled: gameState !== 'idle' && gameState !== 'showing_result', className: "p-2 rounded-lg transition-colors bg-green-500 hover:bg-green-400 text-white disabled:bg-gray-300" }, React.createElement(PlayIcon))
+                    ])
+                ]),
+                React.createElement('div', { key: 'game-area', className: 'flex-1 flex justify-center items-center' }, renderGameArea()),
+                
+                showSettings && React.createElement('div', { className: "absolute inset-0 bg-black bg-opacity-40 z-40 flex items-center justify-center p-4", onClick: () => setShowSettings(false) }, 
+                    React.createElement('div', { className: 'bg-white rounded-xl shadow-2xl w-full max-w-lg m-4 p-6 space-y-6 z-50', onClick: e => e.stopPropagation() }, [
+                        React.createElement('div', { key: 'stitle', className: 'flex justify-between items-center' }, [
+                            React.createElement('h2', { className: 'text-2xl font-bold text-gray-800' }, t.settingsTitle),
+                            React.createElement('button', { onClick: () => setShowSettings(false), className: 'p-2 rounded-full hover:bg-gray-100' }, React.createElement(XIcon))
+                        ]),
+                        React.createElement('div', { key: 's-lang', className: 'space-y-4 p-4 border border-gray-200 rounded-lg' }, [
+                            React.createElement('h3', { className: 'font-semibold text-lg text-gray-700' }, t.language),
+                            React.createElement('div', { className: 'flex gap-2' }, [
+                                React.createElement('button', { onClick: () => setLanguage('nl'), className: `px-4 py-2 rounded-lg transition-colors text-2xl ${language === 'nl' ? 'bg-blue-100 border-2 border-blue-400' : 'bg-gray-100 border-2 border-transparent'}` }, '🇳🇱'),
+                                React.createElement('button', { onClick: () => setLanguage('en'), className: `px-4 py-2 rounded-lg transition-colors text-2xl ${language === 'en' ? 'bg-blue-100 border-2 border-blue-400' : 'bg-gray-100 border-2 border-transparent'}` }, '🇬🇧')
+                            ])
+                        ])
+                    ])
+                )
+            ]);
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(WordSumGame));
+    </script>
+</body>
+</html>
