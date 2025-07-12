@@ -253,11 +253,16 @@
                         );
                     case 'waiting_for_input':
                         return React.createElement('div', { className: 'text-center' }, [
-                            // Conditionally render the word if the setting is on
-                            isWordPermanentlyVisible && React.createElement('div', {
-                                key: 'word-display-permanent',
-                                className: 'flex items-center justify-center mb-4',
-                            }, React.createElement('span', { className: 'text-6xl font-bold text-blue-600 tracking-widest' }, currentWord)),
+                            // This container now always reserves space for the word.
+                            // We toggle the opacity of the word itself inside this fixed space.
+                            React.createElement('div', {
+                                key: 'word-placeholder',
+                                className: 'h-24 flex items-center justify-center mb-4' // h-24 reserves enough vertical space
+                            },
+                                React.createElement('span', {
+                                    className: `text-6xl font-bold text-blue-600 tracking-widest transition-opacity duration-300 ${isWordPermanentlyVisible ? 'opacity-100' : 'opacity-0'}`
+                                }, currentWord)
+                            ),
                             
                             React.createElement('div', { key: 'prompt', className: 'text-2xl text-gray-500 mb-4' }, t.whatIsTheSum),
                             React.createElement('div', { className: 'inline-flex flex-col items-center' }, [
