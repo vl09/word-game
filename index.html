@@ -324,19 +324,19 @@
                 ]),
                 
                 React.createElement('div', { key: 'quick-controls', className: 'p-2 bg-white border-b border-gray-200 flex items-center justify-center gap-2' }, [
-                    // Button 1: Game Mode
+                    // Button 1: Game Mode (Resets game)
                     React.createElement('button', {
                         onClick: () => handleSettingChange(setIsUserWord, p => !p),
                         className: `h-10 px-4 rounded-lg font-semibold transition-colors ${isUserWord ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`
                     }, isUserWord ? t.yourWord : t.randomWord),
-                    // Button 2: Difficulty
+                    // Button 2: Difficulty (Resets game)
                     React.createElement('button', {
                         onClick: () => handleSettingChange(setDifficulty, d => d === 'easy' ? 'medium' : d === 'medium' ? 'hard' : 'easy'),
                         className: `h-10 px-4 rounded-lg font-semibold transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200`
                     }, t[`difficulty${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`]),
-                    // Button 3: Show Word (NEW)
+                    // Button 3: Show Word (Does NOT reset game)
                     React.createElement('button', {
-                        onClick: () => handleSettingChange(setIsWordPermanentlyVisible, p => !p),
+                        onClick: () => setIsWordPermanentlyVisible(p => !p),
                         className: `h-10 px-4 rounded-lg font-semibold transition-colors ${isWordPermanentlyVisible ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`
                     }, t.showWord)
                 ]),
