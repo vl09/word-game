@@ -56,6 +56,8 @@
         const XCircleIcon = ({ className }) => React.createElement('svg', { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className }, [React.createElement('circle', { cx: 12, cy: 12, r: 10 }), React.createElement('line', { x1: 15, y1: 9, x2: 9, y2: 15 }), React.createElement('line', { x1: 9, y1: 9, x2: 15, y2: 15 })]);
         const EyeIcon = () => React.createElement('svg', { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, [React.createElement('path', { key: 1, d: "M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" }), React.createElement('circle', { key: 2, cx: "12", cy: "12", r: "3" })]);
         const EyeOffIcon = () => React.createElement('svg', { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, [React.createElement('path', { key: 1, d: "M9.88 9.88a3 3 0 1 0 4.24 4.24" }), React.createElement('path', { key: 2, d: "M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" }), React.createElement('path', { key: 3, d: "M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" }), React.createElement('line', { key: 4, x1: "2", x2: "22", y1: "2", y2: "22" })]);
+        const HelpCircleIcon = () => React.createElement('svg', { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, [React.createElement('circle', { cx: "12", cy: "12", r: "10" }), React.createElement('path', { d: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" }), React.createElement('path', { d: "M12 17h.01" })]);
+
 
         // --- Cookie Utilities ---
         const setCookie = (name, value, days = 365) => {
@@ -103,6 +105,7 @@
                 difficultyMedium: "Medium",
                 difficultyHard: "Hard",
                 showWord: "Show Word",
+                alphabetValues: "Alphabet Values",
                 wordList: wordLists.en
             },
             nl: {
@@ -127,6 +130,7 @@
                 difficultyMedium: "Gemiddeld",
                 difficultyHard: "Moeilijk",
                 showWord: "Toon Woord",
+                alphabetValues: "Alfabet Waarden",
                 wordList: wordLists.nl
             }
         };
@@ -147,6 +151,7 @@
             const [correctAnswer, setCorrectAnswer] = useState(0);
             const [isWordVisible, setIsWordVisible] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
+            const [showHelp, setShowHelp] = useState(false);
 
             const timeoutRef = useRef(null);
             const inputRef = useRef(null);
@@ -316,6 +321,27 @@
                         ]);
                 }
             };
+                
+            const renderHelpModal = () => {
+                const alphabet = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
+
+                return React.createElement('div', { className: "absolute inset-0 bg-black bg-opacity-40 z-40 flex items-center justify-center p-4", onClick: () => setShowHelp(false) }, 
+                    React.createElement('div', { className: 'bg-white rounded-xl shadow-2xl w-full max-w-lg m-4 p-6 space-y-6 z-50', onClick: e => e.stopPropagation() }, [
+                        React.createElement('div', { key: 'htitle', className: 'flex justify-between items-center' }, [
+                            React.createElement('h2', { className: 'text-2xl font-bold text-gray-800' }, t.alphabetValues),
+                            React.createElement('button', { onClick: () => setShowHelp(false), className: 'p-2 rounded-full hover:bg-gray-100' }, React.createElement(XIcon))
+                        ]),
+                        React.createElement('div', { key: 'alphabet-grid', className: 'grid grid-cols-4 sm:grid-cols-5 gap-2 text-center' },
+                            alphabet.map((letter, index) =>
+                                React.createElement('div', { key: letter, className: 'flex justify-between items-center p-2 bg-gray-100 rounded-md' }, [
+                                    React.createElement('span', { className: 'font-bold text-lg text-blue-600' }, letter),
+                                    React.createElement('span', { className: 'text-gray-700' }, index + 1)
+                                ])
+                            )
+                        )
+                    ])
+                );
+            };
 
             return React.createElement('div', { className: "min-h-screen bg-gray-50 text-gray-800 flex flex-col" }, [
                 React.createElement('div', { key: 'header', className: "p-4 bg-white flex justify-between items-center border-b border-gray-200" }, [
@@ -325,6 +351,7 @@
                     ]),
                     React.createElement('div', { key: 'controls', className: "flex gap-2" }, [
                         React.createElement('button', { key: 'settings', onClick: () => setShowSettings(true), className: "p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors" }, React.createElement(SettingsIcon)),
+                        React.createElement('button', { key: 'help', onClick: () => setShowHelp(true), className: "p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors" }, React.createElement(HelpCircleIcon)),
                         React.createElement('button', { key: 'reset', onClick: resetGame, className: "p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors" }, React.createElement(RotateCcwIcon, {})),
                         React.createElement('button', { key: 'play', onClick: startRound, disabled: gameState !== 'idle' && gameState !== 'showing_result', className: "p-2 rounded-lg transition-colors bg-green-500 hover:bg-green-400 text-white disabled:bg-gray-300" }, React.createElement(PlayIcon))
                     ])
